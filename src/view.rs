@@ -6,6 +6,7 @@ use crossterm::{
     style::Attribute::*,
 };
 use std::cmp::{min, Ordering};
+use crossterm::event::MouseButton;
 use unicode_width::UnicodeWidthChar;
 
 use crate::{Bk, Direction, SearchArgs};
@@ -83,13 +84,9 @@ impl View for Help {
                      Tab  Table of Contents
                        i  Progress and Metadata
 
-PageDown Right Space f l  Page Down
-         PageUp Left b h  Page Up
-                       d  Half Page Down
-                       u  Half Page Up
-                  Down j  Line Down
-                    Up k  Line Up
-                  Home g  Chapter Start
+                     j    Page Down
+                     k    Page Up
+
                    End G  Chapter End
                        [  Previous Chapter
                        ]  Next Chapter
@@ -135,8 +132,8 @@ impl View for Toc {
     fn on_mouse(&self, bk: &mut Bk, e: MouseEvent) {
         match e.kind {
             MouseEventKind::Down(_) => self.click(bk, e.row as usize),
-            MouseEventKind::ScrollDown => self.next(bk, 3),
-            MouseEventKind::ScrollUp => self.prev(bk, 3),
+            MouseEventKind::ScrollDown => self.next(bk, e.row as usize),
+            MouseEventKind::ScrollUp => self.prev(bk, e.row as usize),
             _ => (),
         }
     }
@@ -177,6 +174,7 @@ impl View for Toc {
 }
 
 pub struct Page;
+
 impl Page {
     fn next_chapter(&self, bk: &mut Bk) {
         if bk.chapter < bk.chapters.len() - 1 {
@@ -255,12 +253,14 @@ impl Page {
         bk.view = &Search;
     }
 }
+
 impl View for Page {
     fn on_mouse(&self, bk: &mut Bk, e: MouseEvent) {
         match e.kind {
-            MouseEventKind::Down(_) => self.click(bk, e),
-            MouseEventKind::ScrollDown => self.scroll_down(bk, 3),
-            MouseEventKind::ScrollUp => self.scroll_up(bk, 3),
+            MouseEventKind::Down(MouseButton::Left) => self.scroll_down(bk, 1),
+            MouseEventKind::Down(MouseButton::Middle) => self.scroll_up(bk, 1),
+            // MouseEventKind::ScrollDown => self.scroll_down(bk, 1),
+            // MouseEventKind::ScrollUp => self.scroll_up(bk, 1),
             _ => (),
         }
     }
@@ -298,14 +298,9 @@ impl View for Page {
                 bk.mark('\'');
                 bk.line = 0;
             }
-            Char('d') => self.scroll_down(bk, bk.rows / 2),
-            Char('u') => self.scroll_up(bk, bk.rows / 2),
-            Up | Char('k') => self.scroll_up(bk, 3),
-            Left | PageUp | Char('b' | 'h') => {
-                self.scroll_up(bk, bk.rows);
-            }
-            Down | Char('j') => self.scroll_down(bk, 3),
-            Right | PageDown | Char('f' | 'l' | ' ') => self.scroll_down(bk, bk.rows),
+            Left | PageUp | Char('b' | 'h' | 'k') | Up => self.scroll_up(bk, 1),
+
+            Right | PageDown | Char('f' | 'l' | ' ' | 'j') | Down => self.scroll_down(bk, 1),
             Char('[') => self.prev_chapter(bk),
             Char(']') => self.next_chapter(bk),
             _ => (),

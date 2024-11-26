@@ -124,7 +124,7 @@ impl Bk<'_> {
                 c.title = c
                     .title
                     .chars()
-                    .take(width - 1)
+                    .take(((width as i32) - 1) as usize)
                     .chain(std::iter::once('…'))
                     .collect();
             }
@@ -298,7 +298,7 @@ struct Args {
     toc: bool,
 
     /// characters per line
-    #[argh(option, short = 'w', default = "75")]
+    #[argh(option, short = 'w', default = "120")]
     width: u16,
 }
 
